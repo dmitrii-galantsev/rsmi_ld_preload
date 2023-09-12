@@ -2,48 +2,51 @@
  * This file showcases different ways of accessing a variable
  */
 
-#include <iostream>
-#include <array>
+#include <string>
+
+#include <dlfcn.h>
 #include <unistd.h>
+#include <array>
+#include <iostream>
 
 #include "functions.hpp"
-#include "rocm_smi/rocm_smi.h"
-using namespace std;
+#include "rocm_smi/rocm_smi_device.h"
+#include "rocm_smi/rocm_smi_utils.h"
+//#include "rocm_smi/rocm_smi_monitor.h"
 
-/*
- * Declaration of a reference without instantiation is not allowed
- * The line below will not compile:
- * int & my_reference;
- */
+#define PUBLIC __attribute__((__visibility__("default")))
 
-void pass_by_value(int arg) {
-    printf("arg: %p:%d\n", (void *) &arg, arg);
-    arg++;
-    printf("arg: %p:%d\n", (void *) &arg, arg);
+// int SameFile(const std::string fileA, const std::string fileB);
+int (*same_file_real)(const std::string fileA, const std::string fileB);
+
+void* lookup_symbol(const char* name) {
+    void* symbol;
+    const char* error;
+
+    // auto my_open = dlopen("/opt/rocm-dev2/lib/librocm_smi64.so", RTLD_LAZY);
+    symbol = dlsym(RTLD_NEXT, name);
+    if ((error = dlerror())) {
+        printf("dlsym(%s) failed: %s", name, error);
+        exit(1);
+    }
+
+    return symbol;
 }
 
-void pass_by_reference(int & arg) {
-    printf("arg: %p:%d\n", (void *) &arg, arg);
-    arg++;
-    printf("arg: %p:%d\n", (void *) &arg, arg);
+PUBLIC void amd::smi::Device::fillSupportedFuncs(void) {
+    printf("FAKE fillSupportedFuncs\n");
+    return;
 }
 
-void pass_by_pointer(int * arg) {
-    printf("arg: %p:%d\n", (void *) arg, *arg);
-    (*arg)++;
-    printf("arg: %p:%d\n", (void *) arg, *arg);
-}
-
-void run_functions() {
-    int my_int = 0;
-    printf("initial\n");
-    printf("my_int = %d\n\n", my_int);
-
-    printf("pass_by_value\n");
-    pass_by_value(my_int);
-    printf("my_int = %d\n\n", my_int);
-
-    printf("pass_by_reference\n");
-    pass_by_reference(my_int);
-    printf("my_int = %d\n\n", my_int);
+PUBLIC int amd::smi::SameFile(
+    const std::string fileA,
+    const std::string fileB) {
+    same_file_real =
+        reinterpret_cast<int (*)(const std::string, const std::string)>(
+            lookup_symbol("_ZN3amd3smi8SameFileENSt7__cxx1112basic_"
+                          "stringIcSt11char_traitsIcESaIcEEES6_"));
+    int hm = same_file_real(fileA, fileB);
+    printf("ACTUAL RETURN: %d\n", hm);
+    printf("FAKE RETURN: %d\n", 42);
+    return 42;
 }

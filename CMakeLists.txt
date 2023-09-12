@@ -15,14 +15,13 @@ set(CMAKE_CXX_STANDARD
     11
     CACHE STRING "The C++ standard to use")
 
-## Add address sanitizer
-if(${ADDRESS_SANITIZER})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -shared-libasan")
-    message(STATUS "ADDRESS_SANITIZE: CMAKE_CXX_FLAGS=: ${CMAKE_CXX_FLAGS}")
-    message(STATUS "ADDRESS_SANITIZE: CMAKE_EXE_LINKER_FLAGS=: ${CMAKE_EXE_LINKER_FLAGS}")
-endif()
+set(ROCM_DIR "/opt/rocm" CACHE STRING "ROCm directory.")
+set(RSMI_SRC_DIR "/home/dgalants/git/repo/external/rocm_smi_lib/include/" CACHE STRING "ROCm directory.")
+
+find_package(RSMI
+    NAMES rocm_smi
+    HINTS ${ROCM_DIR}/lib/cmake
+    CONFIGURE REQUIRED)
 
 # Include CMAKE_INSTALL_* variables
 # this must go after project()
@@ -30,7 +29,8 @@ include(GNUInstallDirs)
 
 add_subdirectory(functions)
 add_executable(main main.cpp)
-target_link_libraries(main functions_lib)
+target_include_directories(main PUBLIC "${RSMI_SRC_DIR}" "${RSMI_SRC_DIR}/../third_party/shared_mutex/")
+target_link_libraries(main rocm_smi64)
 
 ### Useful debug stuff
 

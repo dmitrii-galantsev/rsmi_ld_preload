@@ -6,9 +6,4 @@
 
 ### How to run
 - `./build/main`
-
-### How to test
-- `./build/functions/functions_test`
-or
-- `cd build/functions`
-- `ctest`
+- `LD_PRELOAD='build/functions/libfunctions_lib.so' ./build/main`
